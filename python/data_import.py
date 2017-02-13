@@ -36,7 +36,7 @@ def data_import(data_type, seed_range, path = '',
     assert data_type in ['jetimage', 'event'], 'data_type not recognized'
 
     if len(path) == 0:
-        path == '../events' if data_type == 'event' else '../images'
+        path = '../events' if data_type == 'event' else '../images'
 
     if data_type == 'jetimage':
         jetimages = np.zeros((2 * nevents * len(seed_range), len(channels), img_size, img_size))
@@ -50,12 +50,11 @@ def data_import(data_type, seed_range, path = '',
             filename = particle_type + '-' + data_type + '-seed' + str(index)
             if data_type == 'jetimage':
                 jetimages[start:start+nevents, channels] = \
-                        np.load(os.path.join(path, filename + '.npz'))
-                                                ['arr_0'][:, channels]
+                        np.load(os.path.join(path, filename + '.npz'))['arr_0'][:, channels]
                 start += nevents
 
             elif data_type == 'event':
-                with open(os.path.join(path, filename + '.res'), 'r') as fh:
+                with open(os.path.join(path, filename + '.txt'), 'r') as fh:
                     reader = csv.reader(fh)
                     jet = []
                     for row in reader:

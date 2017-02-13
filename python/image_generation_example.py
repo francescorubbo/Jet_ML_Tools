@@ -13,7 +13,7 @@ n_files = 2
 jets, jet_tots = data_import('event', range(1,1 + n_files))
 
 # form the jet images
-jet_images = np.asarray([pixelate(jet) for jet in jets])
+jet_images = np.asarray([pixelate(jet, nb_chan = 3) for jet in jets])
 
 # save the jet images to file
-write_images_to_file('example_jet_images', jet_images,)
+write_images_to_file('example_jet_images', jet_images)
