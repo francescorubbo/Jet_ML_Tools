@@ -45,6 +45,7 @@ def get_unique_file_name(path, filename, suffix = ''):
     incrementing starting from 0. """
 
     counter = 0
+    os.makedirs(path, exist_ok = True)
     files = os.listdir(path)
     while counter < 10000:
         trial_name = filename + '_{}'.format(counter)
