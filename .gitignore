@@ -1,0 +1,5 @@
+*.o
+*~
+__pychache__
+.ipynb_checkpoints
+*.ipynb
