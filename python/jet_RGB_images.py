@@ -1,3 +1,7 @@
+# Patrick Komiske, MIT, 2017
+#
+# Contains several useful functions for creating/modifying jet images.
+
 from utils import *
 from time import clock
 
@@ -94,7 +98,7 @@ def pixelate(jet, img_size = 33, jet_R = 0.4, nb_chan = 1):
     # construct three-channel image
     elif nb_chan == 3:
         for ph,y,pt,label in zip(phi_indices, rap_indices, 
-                                 pts[mask], jet[mask,3]):
+                                 pts[mask], jet[mask,3].astype(int)):
             if charge_map[label] == 0:
                 jet_image[1, ph, y] += pt
             else:
@@ -131,7 +135,7 @@ def write_images_to_file(base_name, images, path = '../images',
 
     ts = clock()
     fprint('Writing images for {} to file ... '.format(base_name))
-    filename = join(path, (base_name + addendum).format(
+    filename = os.path.join(path, (base_name + addendum).format(
                                     len(images[0][0]), len(images[0])))
     np.savez_compressed(filename, images)
     fprint('Done, in {:.3f} seconds.\n'.format(clock() - ts))

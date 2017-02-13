@@ -1,14 +1,19 @@
+# Patrick Komiske, Eric Metodiev, MIT, 2017
+#
+# A simple example showing how we can import existing jet images, train
+# a Keras convolutional model, save the model, and plot and save some of 
+# the ROC curves.
+
+
 from jet_ML_tools import *
 from data_import import *
 import sys
 
 # specify the number of data files to use
-n_files = 10
+n_files = 2
 
 # import existing jet images
-jet_images = data_import('jetimage', range(1,n_files+1),
-            path = '/Volumes/PTK_seagate/Data/AEJ/2-9-images' if len(sys.argv) == 1 else\
-            sys.argv[1])
+jet_images = data_import('jetimage', range(1, n_files + 1))
 
 # hyperparameters
 hps = { 
@@ -47,8 +52,8 @@ history = model.fit(X_train, Y_train,
                     validation_data = (X_val, Y_val))
 
 # get a unique name to save the model as
-name = get_unique_file_name('../models', hps['model_name'], '.h5')
-model.save(join('../models', name))
+name = get_unique_file_name('../models', hps['model_name'])
+save_model(model, name + '.h5')
 
 # construct ROC curve
 qe, ge = ROC_from_model(model, X_test, Y_test)

@@ -3,12 +3,11 @@
 # A collection of functions for analyzing the output of a binary classifier.
 # Includes functions for constructing ROC curve, plotting them, saving them,
 # and computing derived curves from them.
-#
 
 
 import numpy as np
-from os.path import join
 import pickle
+import os
 import matplotlib
 #if matplotlib.get_backend() != 'agg':
 #    matplotlib.use('agg')
@@ -87,10 +86,13 @@ def save_ROC(model, X_test, Y_test, name, num_points = 1000,
     path: The directory where both the ROC curve and the plot should be saved
     """
 
+    # ensure that the directory we're trying to save to exists
+    os.makedirs(path, exist_ok = True)
+
     quark_eff, gluon_eff = ROC_from_model(model, X_test, Y_test, num_points)
 
     base_name = name.split('.')[0]
-    filename = join(path, base_name)
+    filename = os.path.join(path, base_name)
     with open(filename + '_ROC_data.pickle', 'wb') as f:
         pickle.dump({'quark_eff': quark_eff, 'gluon_eff': gluon_eff}, f)
 
@@ -108,7 +110,7 @@ def load_ROC(file, path = '../plots'):
 
     """ Loads ROC data that was saved with save_ROC. """ 
 
-    with open(join(path, file), 'rb') as f:
+    with open(os.path.join(path, file), 'rb') as f:
         data = pickle.load(f)
         return data['quark_eff'], data['gluon_eff']
 
