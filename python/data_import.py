@@ -5,7 +5,7 @@
 # beginning. Can also read in events assuming a csv style file format with
 # an extra newline per event, particles listed one per line, comments 
 # beginning with a '#', and lines denoting overal jet properties beginning
-# with '%'.
+# with 'Event #, [jet_rap], [jet_phi], [jet_pt]'.
 
 
 import numpy as np
@@ -61,9 +61,8 @@ def data_import(data_type, seed_range, path = '',
                     for row in reader:
                         if len(row) > 0 and '#' in row[0]:
                             continue
-                        if len(row) > 0 and '%' in row[0]:
-                            row[0] = row[0][1:]
-                            jet_tots.append(list(map(float, row)))
+                        if len(row) > 0 and 'Event' in row[0]:
+                            jet_tots.append(list(map(float, row[1:])))
                         elif len(row) == 0:
                             jets.append(np.asarray(jet))
                             jet = []
