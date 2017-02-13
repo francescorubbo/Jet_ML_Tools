@@ -12,7 +12,5 @@ python3 image_generation_example.py
 ```
 The `src/` directory contains event generation code. Take a look at the beginning of `Events.cc` for options. Requires Pythia8 and FastJet to be installed and pythis8-config and fastjet-config to be available in the `PATH` (for the makefile to work as is). A standard invocation after compiling would look like
 ```bash
-for i in `seq 1 10`; do
-  ./events -out gluon-event-seed$i.txt -pthatmin 160 -ptjetmin 200 -Zg -seed $i
-done
+ ./events -out gluon-event-seed1.txt -pthatmin 160 -ptjetmin 200 -Zg -seed 1
 ```
