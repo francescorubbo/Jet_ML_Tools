@@ -97,11 +97,11 @@ int main(int argc, char** argv) {
   outstream << "# Multiparton interactions are switched "
       << ( (do_UE) ? "on" : "off" ) << endl;
   outstream << "# Hadronisation is "
-      << ( (do_UE) ? "on" : "off" ) << endl;
+      << ( (do_hadr) ? "on" : "off" ) << endl;
   outstream << "# Final-state radiation is "
-      << ( (do_UE) ? "on" : "off" ) << endl;
+      << ( (do_FSR) ? "on" : "off" ) << endl;
   outstream << "# Initial-state radiation is "
-      << ( (do_UE) ? "on" : "off" ) << endl;
+      << ( (do_ISR) ? "on" : "off" ) << endl;
   outstream << "# Random seed is " << seed << endl;
   outstream << setprecision(OUTPRECISION);
 
