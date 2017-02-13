@@ -10,7 +10,6 @@ and
 ```bash
 python3 image_generation_example.py
 ```
-Note: We assume that "image_dim_ordering" is set to "th" in `keras.json`.
 
 The `src/` directory contains event generation code. Take a look at the beginning of `Events.cc` for options. Requires Pythia8 and FastJet to be installed and pythis8-config and fastjet-config to be available in the `PATH` (for the makefile to work as is). A standard invocation after compiling would look like
 ```bash
