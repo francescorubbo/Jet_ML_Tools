@@ -75,10 +75,10 @@ def save_model(model, name, path = '../models'):
 def data_split(*args, val_frac = .1, test_frac = .1):
 
     """ A function to split an arbitrary number of arrays into train, 
-    validation, and test sets. If val_frac = 0, then we don't split any 
-    events into the validation set. If exactly two arguments are given 
+    validation, and test sets. If val_frac = 0 or test_frac=0, then we 
+    don't split any events into the validation set. If exactly two arguments are given 
     (an "X" and "Y") then we return (X_train, Y_train, [X_val, Y_val], 
-    X_test, Y_test), otherwise lists corresponding to train, [val], test 
+    [X_test, Y_test]), otherwise lists corresponding to train, [val], [test] 
     splits are returned with entry i corresponding to argument i. Note that
     all arguments must have the same number of samples otherwise an exception
     will be thrown.
@@ -89,8 +89,9 @@ def data_split(*args, val_frac = .1, test_frac = .1):
     """
 
     # ensure proper input
-    assert 0 <= val_frac <= 1.0, 'val_frac invalid'
-    assert 0 <= test_frac <= 1.0, 'test_frac invalid'
+    assert 0 <= val_frac < 1.0, 'val_frac invalid'
+    assert 0 <= test_frac < 1.0, 'test_frac invalid'
+    assert 0 < val_frac + test_frac < 1.0, 'val_frac + test_frac invalid'
 
     # confirm that all arguments have the same number of samples
     if len(args) == 0:
@@ -101,6 +102,10 @@ def data_split(*args, val_frac = .1, test_frac = .1):
             raise AssertionError('Args to data_split have different length')
 
     perm = np.random.permutation(np.arange(n_samples, dtype = int))
+    
+    if num_test == 0:
+        num_test = num_val
+        num_val = 0
 
     num_test = int(n_samples * test_frac)
     num_val = int(n_samples * val_frac)

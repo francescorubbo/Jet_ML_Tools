@@ -13,7 +13,7 @@ from keras.callbacks import EarlyStopping
 # ensure Theano dimension ordering
 K.set_image_dim_ordering('th')
 
-def conv_net_construct(hps):
+def conv_net_construct(hps, compiled = True):
 
     nb_conv = hps['nb_conv']
     nb_pool = hps['nb_pool']
@@ -23,6 +23,7 @@ def conv_net_construct(hps):
     nb_neurons = hps['nb_neurons']
     dropout = hps['dropout']
     act = hps.setdefault('act', 'relu')
+    out_dim = hps.setdefault('out_dim', 2)
 
     model = Sequential()
     model.add(Convolution2D(nb_filters[0], nb_conv[0], nb_conv[0], 
@@ -50,14 +51,17 @@ def conv_net_construct(hps):
     model.add(Activation(act))
     model.add(Dropout(dropout[3]))
 
-    model.add(Dense(2))
+    model.add(Dense(out_dim))
     model.add(Activation('softmax'))
 
-    model.compile(loss = 'categorical_crossentropy', optimizer = 'adam', 
-                  metrics = ['accuracy'])
-    model.summary()
+    if compiled:
+        model.compile(loss = 'categorical_crossentropy', optimizer = 'adam', 
+                      metrics = ['accuracy'])
+        model.summary()
+        return model
 
-    return model
+    else:
+        return model
 
 def dense_net_construct(hps):
     layer_dims = hps['layer_dims']
