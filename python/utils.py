@@ -102,14 +102,14 @@ def data_split(*args, val_frac = .1, test_frac = .1):
             raise AssertionError('Args to data_split have different length')
 
     perm = np.random.permutation(np.arange(n_samples, dtype = int))
-    
-    if num_test == 0:
-        num_test = num_val
-        num_val = 0
 
     num_test = int(n_samples * test_frac)
     num_val = int(n_samples * val_frac)
     num_train = n_samples - num_val - num_test
+        
+    if num_test == 0:
+        num_test = num_val
+        num_val = 0
 
     # if we're doing the conventional train-val-test-split
     if len(args) == 2:
