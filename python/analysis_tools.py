@@ -3,11 +3,12 @@
 # A collection of functions for analyzing the output of a binary classifier.
 # Includes functions for constructing ROC curve, plotting them, saving them,
 # and computing derived curves from them.
+#
 
 
 import numpy as np
+from os.path import join
 import pickle
-import os
 import matplotlib
 #if matplotlib.get_backend() != 'agg':
 #    matplotlib.use('agg')
@@ -86,13 +87,10 @@ def save_ROC(model, X_test, Y_test, name, num_points = 1000,
     path: The directory where both the ROC curve and the plot should be saved
     """
 
-    # ensure that the directory we're trying to save to exists
-    os.makedirs(path, exist_ok = True)
-
     quark_eff, gluon_eff = ROC_from_model(model, X_test, Y_test, num_points)
 
     base_name = name.split('.')[0]
-    filename = os.path.join(path, base_name)
+    filename = join(path, base_name)
     with open(filename + '_ROC_data.pickle', 'wb') as f:
         pickle.dump({'quark_eff': quark_eff, 'gluon_eff': gluon_eff}, f)
 
@@ -106,11 +104,29 @@ def save_ROC(model, X_test, Y_test, name, num_points = 1000,
         print('\nSaving ROC plot for {}'.format(base_name))
 
 
+def save_nparam_AUC(nparams, AUCs, name, plot = True,
+                    path = '../plots', show = True):
+
+    """ Save plot of the AUC as a function of the number of parameters """
+
+    base_name = name.split('.')[0]
+    filename = join(path, base_name)
+    with open(filename + '_nparams_AUC.pickle', 'wb') as f:
+        pickle.dump({'nparams': nparams, 'AUC': AUCs}, f)
+
+    if plot:
+        plot_nparam_AUC(nparams, AUCs, show = False)
+        plt.savefig(filename + '_nparam_AUC_plot.pdf', bbox_inches = 'tight')
+        if show:
+            plt.show()
+        print('\nSaving AUC plot for {}'.format(base_name))
+
+        
 def load_ROC(file, path = '../plots'):
 
     """ Loads ROC data that was saved with save_ROC. """ 
 
-    with open(os.path.join(path, file), 'rb') as f:
+    with open(join(path, file), 'rb') as f:
         data = pickle.load(f)
         return data['quark_eff'], data['gluon_eff']
 
@@ -178,6 +194,20 @@ def plot_SI(quark_eff, gluon_eff, color = 'blue', label = '',
         plt.show()
 
 
+def plot_nparam_AUC(nparams, AUCs, color = 'blue', label = ',',
+                    path = '../plots', ylim = [0.,1], show = True):
+
+    """ Plot the AUC as a function of the number of parameters """
+
+    plt.plot(nparams, AUCs, color = color, label = label)
+    plt.ylim(*ylim)
+    plt.xscale('log')
+    plt.xlabel('# parameters')
+    plt.ylabel('AUC')
+    if show:
+        plt.show()
+
+    
 def ROC_area(qe, ge):
 
     """ Compute area under the ROC curve """

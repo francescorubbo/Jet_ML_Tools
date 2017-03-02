@@ -1,7 +1,3 @@
-# Patrick Komiske, MIT, 2017
-#
-# Contains several useful functions for creating/modifying jet images.
-
 from utils import *
 from time import clock
 
@@ -28,17 +24,17 @@ charge_map = {
              }
 
 
-def pixelate(jet, img_size = 33, jet_R = 0.4, nb_chan = 1):
+def pixelate(jet, jet_center = None, img_size = 33, img_width = 0.8, nb_chan = 1, norm = True):
 
     """ A function for creating a jet image from a list of particles.
 
     jet: an array containing the list of particles in a jet with each row 
          representing a particle and the columns being (rapidity, phi, pT, 
          pdgid), the latter not being necessary for a grayscale image.
-    jet_phi: phi value for the jet. used to avoid split iamges.
+    jet_center: the (y, phi) center of the jet. If None, compute the center
+                via the pt weighted centroid.
     img_size: number of pixels along one dimension of the image.
-    jet_R: R value used when finding the jet. The image will be size 2R x 2R
-           in (y,phi) space.
+    img_width: the image will be size img_width x img_width
     nb_chan: 1 - returns a grayscale image of total pt
              2 - returns a two-channel image with total pt and charge counts
              3 - returns a three-channel "RGB" image with charged pt, neutral
@@ -48,8 +44,8 @@ def pixelate(jet, img_size = 33, jet_R = 0.4, nb_chan = 1):
     if nb_chan not in [1,2,3]:
         raise ValueError('Invalid number of channels for jet image.')
 
-    # assume that the image should be (2jet_R x 2jet_R) in size
-    pix_width = 2 * jet_R / img_size
+    # the image is (img_width x img_width) in size
+    pix_width = img_width / img_size
     jet_image = np.zeros((nb_chan, img_size, img_size))
 
     raps = jet[:,0]
@@ -57,13 +53,17 @@ def pixelate(jet, img_size = 33, jet_R = 0.4, nb_chan = 1):
     pts  = jet[:,2]
 
     # deal with split images
-    ref_phi = phis[np.argmax(pts)]
-    phis[phis - ref_phi >  2 * jet_R] -= 2 * np.pi
-    phis[phis - ref_phi < -2 * jet_R] += 2 * np.pi 
+    ref_phi = phis[np.argmax(pts)] if jet_center == None else jet_center[1]
+    phis[phis - ref_phi >  img_width] -= 2 * np.pi
+    phis[phis - ref_phi < -img_width] += 2 * np.pi 
 
-    # get jet pt centroid index
-    rap_avg = np.average(raps, weights = pts)
-    phi_avg = np.average(phis, weights = pts)
+    if jet_center == None:
+        rap_avg = np.average(raps, weights = pts)
+        phi_avg = np.average(phis, weights = pts)
+    else:
+        rap_avg = jet_center[0]
+        phi_avg = jet_center[1]
+    
     rap_pt_cent_index = np.ceil(rap_avg/pix_width - .5) - np.floor(img_size / 2)
     phi_pt_cent_index = np.ceil(phi_avg/pix_width - .5) - np.floor(img_size / 2)
 
@@ -98,7 +98,7 @@ def pixelate(jet, img_size = 33, jet_R = 0.4, nb_chan = 1):
     # construct three-channel image
     elif nb_chan == 3:
         for ph,y,pt,label in zip(phi_indices, rap_indices, 
-                                 pts[mask], jet[mask,3].astype(int)):
+                                 pts[mask], jet[mask,3]):
             if charge_map[label] == 0:
                 jet_image[1, ph, y] += pt
             else:
@@ -107,15 +107,27 @@ def pixelate(jet, img_size = 33, jet_R = 0.4, nb_chan = 1):
         num_pt_chans = 2
 
     # L1-normalize the pt channels of the jet image
-    try:
-        jet_image[:num_pt_chans] = jet_image[:num_pt_chans]/\
-                                   np.sum(jet_image[:num_pt_chans])
-    except FloatingPointError:
-        sys.stderr.write('ERROR: No particles in image!\n')
-        sys.stderr.flush()
+    if norm:
+        try:
+            jet_image[:num_pt_chans] = jet_image[:num_pt_chans]/\
+                                       np.sum(jet_image[:num_pt_chans])
+        except FloatingPointError:
+            sys.stderr.write('ERROR: No particles in image!\n')
+            sys.stderr.flush()
 
-    return jet_image
+    if jet_center == None:
+        return jet_image, (rap_avg, phi_avg)
+    else:
+        return jet_image
 
+def upsample(images, factor = 1):
+
+    """ A function for upsampling (A,B,N,N) images to (A,B, factor*N, factor*N) images, preserving norm
+    
+    images: the array of images.
+    factor: the upsampling factor.
+    """
+    return images.repeat(factor, axis=3).repeat(factor, axis=2)/factor**2
 
 def write_images_to_file(base_name, images, path = '../images', 
                          addendum = '_{0}x{0}images_{1}chan'):
@@ -135,7 +147,7 @@ def write_images_to_file(base_name, images, path = '../images',
 
     ts = clock()
     fprint('Writing images for {} to file ... '.format(base_name))
-    filename = os.path.join(path, (base_name + addendum).format(
+    filename = join(path, (base_name + addendum).format(
                                     len(images[0][0]), len(images[0])))
     np.savez_compressed(filename, images)
     fprint('Done, in {:.3f} seconds.\n'.format(clock() - ts))

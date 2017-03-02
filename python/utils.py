@@ -2,8 +2,11 @@
 #
 # A collection of functions that can be useful for a variety of tasks
 # across different projects.
+#
 
-import sys, os
+import sys
+from os.path import join
+from os import listdir
 import numpy as np
 
 
@@ -37,7 +40,7 @@ def to_categorical(vector, num_cat):
                                                     for x in vector])
 
 
-def get_unique_file_name(path, filename, suffix = ''):
+def get_unique_file_name(path, filename, suffix):
 
     """ A function for ensuring unique filenames for saving files. Takes a path,
     filename, and suffix and returns path/filename_index.suffix with the 
@@ -45,8 +48,7 @@ def get_unique_file_name(path, filename, suffix = ''):
     incrementing starting from 0. """
 
     counter = 0
-    os.makedirs(path, exist_ok = True)
-    files = os.listdir(path)
+    files = listdir(path)
     while counter < 10000:
         trial_name = filename + '_{}'.format(counter)
         if trial_name + suffix not in files:
@@ -56,20 +58,6 @@ def get_unique_file_name(path, filename, suffix = ''):
             counter += 1
     raise NameError("Could not find unique filename for {} in {}"
                     .format(filename, path))
-
-
-def save_model(model, name, path = '../models'):
-
-    """ A function for saving a Keras model. Safely ensures that directories 
-    exist before saving.
-
-    model: the Keras model to be saved
-    name: the name of the model
-    path: where to save the file
-    """
-
-    os.makedirs(path, exist_ok = True)
-    model.save(os.path.join(path, name))
 
 
 def data_split(*args, val_frac = .1, test_frac = .1):
