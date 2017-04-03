@@ -9,6 +9,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D, SpatialDropout2D
 from keras import backend as K
 from keras.callbacks import EarlyStopping
+from keras.optimizers import Adam
 
 # ensure Theano dimension ordering
 K.set_image_dim_ordering('th')
