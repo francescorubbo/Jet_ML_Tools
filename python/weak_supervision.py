@@ -10,6 +10,8 @@
 
 from jet_ML_tools import *
 from data_import import data_import
+#CONSTANTS
+curr_batch_size = 6456
 
 #
 #   Loss Function for Weak Supervision
@@ -17,7 +19,7 @@ from data_import import data_import
 #       - assumes that ytrue and ypred are 1-hot encoded
 #
 def weak_loss_function(ytrue, ypred):
-    return K.square((K.sum(ypred[:,1]) - K.sum(ytrue[:,1])))
+    return K.square((K.sum(ypred[:,1]) - K.sum(ytrue[:,1])))/curr_batch_size
 
 #
 #   Batch generation for training with Keras
@@ -87,10 +89,17 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.1
 
     print('bunch shape',np.shape(X_bunches))
     print('bunch shape',np.shape(Y_bunches))
+	
+    X_bunches = np.vstack(X_bunches)
+    Y_bunches = np.vstack(Y_bunches)
+
+    print('bunch shape',np.shape(X_bunches))
+    print('bunch shape',np.shape(Y_bunches))
 
     CNN_model = conv_net_construct(hps, compiled = False)
     earlystopper = EarlyStopping(monitor="val_loss", patience= hps['patience'])
-    
+    save_file_name = "model_weak" if weak else "model_strong"
+    checkpointer = ModelCheckpoint(save_file_name, monitor='val_loss', save_best_only=True)
     # the loss functions are: weak_loss_function for weak supervision and categorical_crossentropy for strong supervision
     if weak:
         CNN_model.compile(loss=weak_loss_function, optimizer=Adam(lr=learning_rate), metrics = ['accuracy']) 
@@ -101,11 +110,14 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.1
     if weak:
         print('\nDuring proper training, \'acc\' should tend towards {:.3f}\n'
                                     .format(.5+np.mean([abs(.5-x) for x in bunch_fracs])))
-    history = CNN_model.fit_generator(generator = weak_data_generator(X_bunches, Y_bunches, hps['batch_size']), 
-                                      samples_per_epoch = int(len(X_bunches)*len(X_bunches[0])),
-                        nb_epoch = hps['nb_epoch'],
-                        validation_data = (X_val, Y_val), 
-                        callbacks = [earlystopper])
+    #history = CNN_model.fit_generator(generator = weak_data_generator(X_bunches, Y_bunches, hps['batch_size']), 
+    #                                  samples_per_epoch = int(len(X_bunches)*len(X_bunches[0])),
+    #                    nb_epoch = hps['nb_epoch'],
+    #                    validation_data = (X_val, Y_val), 
+    #                    callbacks = [earlystopper])
+    history = CNN_model.fit(X_bunches, Y_bunches, batch_size=curr_batch_size,  shuffle=False, nb_epoch=hps["nb_epoch"],\
+	 validation_data=(X_val, Y_val), callbacks=[earlystopper, checkpointer])
+    CNN_model.load_weights(save_file_name)
     return CNN_model
     
 
@@ -128,14 +140,14 @@ if __name__ == '__main__':
     hps =   {   
                 'batch_size': 100, 
                 'img_size': 33,
-                'nb_epoch': 10, 
+                'nb_epoch': 50, 
                 'nb_conv': [8,4,4], 
                 'nb_filters': [64, 64, 64],
                 'nb_neurons': 128, 
                 'nb_pool': [2, 2, 2], 
                 'dropout': [.25, .5, .5, .5],
-                'nb_channels': 1, 
-                'patience': 3, 
+                'nb_channels': 15, 
+                'patience': 1, 
                 'out_dim' : 2
             }
 
@@ -143,7 +155,7 @@ if __name__ == '__main__':
     bunch_fracs = [0.3, 0.4, 0.5, .6, .7]
 
     # train the model, once weakly and once strongly
-    for weak in [False]:
+    for weak in [True, False]:
         CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.1, weak = weak)
         if weak:
             quark_eff_weak, gluon_eff_weak = ROC_from_model(CNN_model, data_test, labels_test)

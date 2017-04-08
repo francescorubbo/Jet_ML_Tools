@@ -10,7 +10,7 @@ import pickle
 import os
 import matplotlib
 #if matplotlib.get_backend() != 'agg':
-#    matplotlib.use('agg')
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 
 
@@ -122,7 +122,9 @@ def plot_ROC(quark_eff, gluon_eff, color = 'blue', label = '', show = True):
     color: the color to use
     label: what to label the curve
     """
-
+    area = ROC_area(quark_eff, gluon_eff)
+    label = label +  " : " + str(area)
+    print(label)
     plt.plot(quark_eff, gluon_eff, color = color, label = label)
     plt.xticks(np.linspace(0,1,11))
     plt.yticks(np.linspace(0,1,11))
@@ -167,7 +169,8 @@ def plot_SI(quark_eff, gluon_eff, color = 'blue', label = '',
     xlim: the range of x values to show
     ylim: the range of y values to show
     """
-
+    area = ROC_area(quark_eff, gluon_eff)
+    label = label +  " : " + str(area)
     plt.plot(*SI(quark_eff, gluon_eff), color = color, label = label)
     plt.xticks(np.linspace(0,1,11))
     plt.xlim(*xlim)
