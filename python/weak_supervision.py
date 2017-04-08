@@ -27,9 +27,8 @@ def weak_loss_function(ytrue, ypred):
 def weak_data_generator(samples, outputs, batch_size):
     # yield batches from alternating bunches, then repeat
     while True:
-        for i in range(int(samples[0].shape[0]/batch_size)):
-            for sample, output in zip(samples, outputs):
-                yield sample[i*batch_size:(i+1)*batch_size], output[i*batch_size:(i+1)*batch_size]                
+        for sample, output in zip(samples, outputs):
+            yield sample, output
 
 #                
 #   Bunch creation with different fractions
@@ -86,6 +85,9 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.1
     X_train, Y_train, X_val, Y_val = data_split(data, labels, val_frac = val_frac, test_frac = 0)
     X_bunches, Y_bunches = make_bunches(X_train, Y_train, bunch_fracs, weak = weak)
 
+    print('bunch shape',np.shape(X_bunches))
+    print('bunch shape',np.shape(Y_bunches))
+
     CNN_model = conv_net_construct(hps, compiled = False)
     earlystopper = EarlyStopping(monitor="val_loss", patience= hps['patience'])
     
@@ -100,7 +102,7 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.1
         print('\nDuring proper training, \'acc\' should tend towards {:.3f}\n'
                                     .format(.5+np.mean([abs(.5-x) for x in bunch_fracs])))
     history = CNN_model.fit_generator(generator = weak_data_generator(X_bunches, Y_bunches, hps['batch_size']), 
-                        samples_per_epoch = int(X_bunches[0].shape[0]/hps['batch_size'])*hps['batch_size']*len(X_bunches),
+                                      samples_per_epoch = int(len(X_bunches)*len(X_bunches[0])),
                         nb_epoch = hps['nb_epoch'],
                         validation_data = (X_val, Y_val), 
                         callbacks = [earlystopper])
@@ -141,7 +143,7 @@ if __name__ == '__main__':
     bunch_fracs = [0.3, 0.4, 0.5, .6, .7]
 
     # train the model, once weakly and once strongly
-    for weak in [True, False]:
+    for weak in [False]:
         CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.1, weak = weak)
         if weak:
             quark_eff_weak, gluon_eff_weak = ROC_from_model(CNN_model, data_test, labels_test)
