@@ -10,6 +10,7 @@
 
 from jet_ML_tools import *
 from data_import import data_import
+import random
 #CONSTANTS
 curr_batch_size = 6456
 
@@ -19,7 +20,7 @@ curr_batch_size = 6456
 #       - assumes that ytrue and ypred are 1-hot encoded
 #
 def weak_loss_function(ytrue, ypred):
-    return K.square((K.sum(ypred[:,1]) - K.sum(ytrue[:,1])))/curr_batch_size
+    return K.square((K.sum(ypred[:,1]) - K.sum(ytrue[:,1]))/curr_batch_size)
 
 #
 #   Batch generation for training with Keras
@@ -58,6 +59,8 @@ def make_bunches(X, Y, bunch_fracs, weak = True, b_size_input = float('inf')):
 
     # use the user-specific bunch size if possible
     bunch_size = min([bunch_size, b_size_input])
+    global curr_batch_size
+    curr_batch_size = bunch_size 
 
     fprint('Using bunch_size = {}\n'.format(bunch_size))
     
@@ -82,24 +85,29 @@ def make_bunches(X, Y, bunch_fracs, weak = True, b_size_input = float('inf')):
 #       - need to specify the different bunch fractions to use
 #       - outputs a trained model
 #
-def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.1, learning_rate = 0.001, weak = True):
-    
-    X_train, Y_train, X_val, Y_val = data_split(data, labels, val_frac = val_frac, test_frac = 0)
-    X_bunches, Y_bunches = make_bunches(X_train, Y_train, bunch_fracs, weak = weak)
+def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3, learning_rate = 0.002, weak = True):
+ 	
+    all_X_bunches, all_Y_bunches = make_bunches(data, labels, bunch_fracs, weak = weak)
+    all_X_bunches, all_Y_bunches = np.array(all_X_bunches), np.array(all_Y_bunches)
 
-    print('bunch shape',np.shape(X_bunches))
-    print('bunch shape',np.shape(Y_bunches))
-	
-    X_bunches = np.vstack(X_bunches)
-    Y_bunches = np.vstack(Y_bunches)
+    num_bunches = len(all_X_bunches)
+    val_indices = np.array(random.sample(range(num_bunches), int(val_frac*num_bunches)))
+    print(all_X_bunches.shape, all_Y_bunches.shape, val_indices)
+    X_val, Y_val = np.vstack(all_X_bunches[val_indices]), np.vstack(all_Y_bunches[val_indices])
 
-    print('bunch shape',np.shape(X_bunches))
-    print('bunch shape',np.shape(Y_bunches))
+    train_indices = [k for k in range(num_bunches) if k not in val_indices]
+    X_bunches = np.vstack(all_X_bunches[train_indices])
+    Y_bunches = np.vstack(all_Y_bunches[train_indices])
 
     CNN_model = conv_net_construct(hps, compiled = False)
     earlystopper = EarlyStopping(monitor="val_loss", patience= hps['patience'])
     save_file_name = "model_weak" if weak else "model_strong"
-    checkpointer = ModelCheckpoint(save_file_name, monitor='val_loss', save_best_only=True)
+    
+    if os.path.exists(save_file_name):
+        print('Weak Supervision Weight File Exists. Replacing ...')
+        os.remove(save_file_name)
+    to_monitor = "val_loss" #"val_acc" if weak else "val_loss"
+    checkpointer = ModelCheckpoint(save_file_name, monitor=to_monitor, save_best_only=True)
     # the loss functions are: weak_loss_function for weak supervision and categorical_crossentropy for strong supervision
     if weak:
         CNN_model.compile(loss=weak_loss_function, optimizer=Adam(lr=learning_rate), metrics = ['accuracy']) 
@@ -110,13 +118,9 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.1
     if weak:
         print('\nDuring proper training, \'acc\' should tend towards {:.3f}\n'
                                     .format(.5+np.mean([abs(.5-x) for x in bunch_fracs])))
-    #history = CNN_model.fit_generator(generator = weak_data_generator(X_bunches, Y_bunches, hps['batch_size']), 
-    #                                  samples_per_epoch = int(len(X_bunches)*len(X_bunches[0])),
-    #                    nb_epoch = hps['nb_epoch'],
-    #                    validation_data = (X_val, Y_val), 
-    #                    callbacks = [earlystopper])
-    history = CNN_model.fit(X_bunches, Y_bunches, batch_size=curr_batch_size,  shuffle=False, nb_epoch=hps["nb_epoch"],\
-	 validation_data=(X_val, Y_val), callbacks=[earlystopper, checkpointer])
+    
+    history = CNN_model.fit(X_bunches, Y_bunches, batch_size=curr_batch_size,  shuffle='batch', nb_epoch=hps["nb_epoch"],\
+        validation_data=(X_val, Y_val), callbacks=[earlystopper, checkpointer])
     CNN_model.load_weights(save_file_name)
     return CNN_model
     
@@ -136,44 +140,43 @@ if __name__ == '__main__':
     labels = to_categorical(np.concatenate((np.zeros(n_events_per_file*n_files),np.ones(n_events_per_file*n_files))), 2)
     data_train, labels_train, data_test, labels_test = data_split(data, labels, val_frac = 0.0, test_frac = 0.1)
 
+    #data_train, data_test  = zero_center(data_train, data_test)
+    #data_train, data_test  = standardize(data_train, data_test)
+    
     # CNN hyperparameters based on arXiv:1612.01551
     hps =   {   
-                'batch_size': 100, 
+                'batch_size': 128, 
                 'img_size': 33,
-                'nb_epoch': 50, 
+                'nb_epoch': 60, 
                 'nb_conv': [8,4,4], 
                 'nb_filters': [64, 64, 64],
                 'nb_neurons': 128, 
                 'nb_pool': [2, 2, 2], 
                 'dropout': [.25, .5, .5, .5],
-                'nb_channels': 15, 
-                'patience': 1, 
+                'nb_channels': 1, 
+                'patience': 15, 
                 'out_dim' : 2
             }
 
     # some example bunch fractions
-    bunch_fracs = [0.3, 0.4, 0.5, .6, .7]
-
+    bunch_fracs = np.linspace(0.1, 1.0, 16) #[0.1, 0.5, 0.5, 0.5] 
+    print("Bunch Fractions: ", bunch_fracs)
     # train the model, once weakly and once strongly
-    for weak in [True, False]:
-        CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.1, weak = weak)
+    for weak in [True]:
+        CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.3, weak = weak)
         if weak:
             quark_eff_weak, gluon_eff_weak = ROC_from_model(CNN_model, data_test, labels_test)
         else:
             quark_eff_strong, gluon_eff_strong = ROC_from_model(CNN_model, data_test, labels_test)
 
     plot_ROC(quark_eff_weak, gluon_eff_weak, show = False, label = 'Weakly supervised')
-    plot_ROC(quark_eff_strong, gluon_eff_strong, color = 'red', show = False, label = 'Strongly supervised')
+    #plot_ROC(quark_eff_strong, gluon_eff_strong, color = 'red', show = False, label = 'Strongly supervised')
     plt.title('')
     plt.legend(loc = 'lower left')
     os.makedirs('../plots', exist_ok = True)
     plt.savefig('../plots/weak-strong-comparison.pdf', bbox_inches = 'tight')
     plt.show()
         
-
-
-
-
 
 
 

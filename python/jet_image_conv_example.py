@@ -37,8 +37,8 @@ Y = make_labels(n_files*10000, n_files*10000)
 X_train, Y_train, X_val, Y_val, X_test, Y_test = data_split(jet_images, Y)
 
 # preprocess the data
-X_train, X_val, X_test = zero_center(X_train, X_val, X_test)
-X_train, X_val, X_test = standardize(X_train, X_val, X_test)
+#X_train, X_val, X_test = zero_center(X_train, X_val, X_test)
+#X_train, X_val, X_test = standardize(X_train, X_val, X_test)
 
 model = conv_net_construct(hps)
 
