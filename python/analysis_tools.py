@@ -37,8 +37,8 @@ def ROC_from_model(model, X_test, Y_test, num_points = 1000):
 def plot_distribution(model, X_test, Y_test, save_name, num_points = 1000):
     quark_prob = model.predict_proba(X_test, verbose = 0)[:,1]
     labels = Y_test[:,1]
-    plt.hist(quark_prob[label == 1],  histtype='step', normed=True, label="Signal")
-    plt.hist(quark_prob[label == 0],  histtype='step', normed=True, label="Background")
+    plt.hist(quark_prob[labels == 1],  histtype='step', normed=True, label="Signal")
+    plt.hist(quark_prob[labels == 0],  histtype='step', normed=True, label="Background")
     plt.xlabel("Probability")
     plt.ylabel("Proportion")
     plt.legend(loc='upper left')
