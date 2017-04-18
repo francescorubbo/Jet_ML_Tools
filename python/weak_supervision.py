@@ -66,7 +66,9 @@ if __name__ == '__main__':
     for i in range(num_iter):
         CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.3)
         quark_eff_weak, gluon_eff_weak = ROC_from_model(CNN_model, data_test, labels_test)
-        aucs.append(ROC_area(quark_eff_weak, gluon_eff_weak))
+        area = ROC_area(quark_eff_weak, gluon_eff_weak)
+        aucs.append(area)
+        if area > 0.72: plot_distribution(CNN_model, data_test, labels_test, save_name)
     print('AUCS : ', aucs)
     np.save("aucs/" + save_name + "_aucs.pdf", aucs)
 

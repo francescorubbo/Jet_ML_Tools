@@ -13,7 +13,8 @@ SBATCH --error=weak_supervision.%j.err
 # NOTE- in the hns partition the default max run time is 7 days , so you wont need to include qos
 # We are submitting to the dev partition, there are several on sherlock: normal, gpu, bigmem (jobs requiring >64Gigs RAM) 
 #SBATCH -p k80 --gres=gpu:1
-SBATCH --partition=k80 --gres=gpu:1 --pty bash
+#SBATCH --partition=k80 --gres=gpu:1
+SBATCH -p dev
 #################
 #number of nodes you are requesting, the more you ask for the longer you wait
 #SBATCH --nodes=1
@@ -23,6 +24,11 @@ source  ~/jetimage_weaksupervision/bin/activate
 module load python/3.5.0
 module load cudnn/5.1
 module load cuda80/blas/8.0.44
+module load cuda80/toolkit/8.0.44
+module load cuda80/fft/8.0.44                     
+module load cuda80/gdk/352.79                      
+module load cuda80/nsight/8.0.44                   
+module load cuda80/profiler/8.0.44                
 module load cuda80/toolkit/8.0.44
 
 python weak_supervision.py --ne=1 --num_iter=1 --n --save_name=normalized_input

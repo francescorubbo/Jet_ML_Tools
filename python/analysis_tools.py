@@ -34,6 +34,15 @@ def ROC_from_model(model, X_test, Y_test, num_points = 1000):
 
     return quark_eff, gluon_eff
 
+def plot_distribution(model, X_test, Y_test, save_name, num_points = 1000):
+    quark_prob = model.predict_proba(X_test, verbose = 0)[:,1]
+    labels = Y_test[:,1]
+    plt.hist(quark_prob[label == 1],  histtype='step', normed=True, label="Signal")
+    plt.hist(quark_prob[label == 0],  histtype='step', normed=True, label="Background")
+    plt.xlabel("Probability")
+    plt.ylabel("Proportion")
+    plt.legend(loc='upper left')
+    plt.savefigt("../plots/weak_dist/" + save_name + "_dist.pdf")
 
 def abstract_ROC(classifier, labels, num_points = 1000):
 
@@ -187,7 +196,9 @@ def ROC_area(qe, ge):
     """ Compute area under the ROC curve """
 
     normal_order = qe.argsort()
-    return np.trapz(ge[normal_order], qe[normal_order])
+    area = np.trapz(ge[normal_order], qe[normal_order])
+    area = area if area > 0.5 else 1.0 - area
+    return area
 
 
 def SI(quark_eff, gluon_eff, reg = 10**-6):
