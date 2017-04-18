@@ -134,6 +134,7 @@ def plot_ROC(quark_eff, gluon_eff, color = 'blue', label = '', show = True):
               .format(ROC_area(quark_eff, gluon_eff)))
     if show:
         plt.show()
+    return area
 
 
 def plot_inv_ROC(quark_eff, gluon_eff, color = 'blue', label = '',

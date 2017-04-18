@@ -12,7 +12,7 @@ from jet_ML_tools import *
 from data_import import data_import
 import random
 from weak_model import weak_train_CNN
-from optparser import OptionParser
+from optparse import OptionParser
 
 if __name__ == '__main__':
 
@@ -22,14 +22,16 @@ if __name__ == '__main__':
     parser.add_option("--init", type="string", dest="init", default="he_normal")
     parser.add_option("--num_frac", type="int", dest="num_frac", default=16)
     parser.add_option("--num_iter", type="int", dest="num_iter", default=1)
-    
+    parser.add_option("--save_name", type="string", dest="save_name", default="un_normalized")
     options, args = parser.parse_args()
     normalize = options.normalize
     nb_epoch  = options.nb_epoch
     init = options.init
     num_frac = options.num_frac
     num_iter = options.num_iter
+    save_name = options.save_name
 
+    print(options)
     # specify the file inputs
     n_files, n_events_per_file = 2, 10000
 
@@ -53,7 +55,7 @@ if __name__ == '__main__':
                 'nb_pool': [2, 2, 2], 
                 'dropout': [.25, .5, .5, .5],
                 'nb_channels': 1, 
-                'init' : init
+                'init' : init,
                 'patience': 15, 
                 'out_dim' : 2
             }
@@ -64,15 +66,9 @@ if __name__ == '__main__':
     for i in range(num_iter):
         CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.3)
         quark_eff_weak, gluon_eff_weak = ROC_from_model(CNN_model, data_test, labels_test)
-
-    plot_ROC(quark_eff_weak, gluon_eff_weak, show = False, label = 'Weakly supervised')
-    plt.title('')
-    plt.legend(loc = 'lower left')
-    os.makedirs('../plots', exist_ok = True)
-    plt.savefig('../plots/weak-strong-comparison.pdf', bbox_inches = 'tight')
-    plt.show()
-        
-
+        aucs.append(ROC_area(quark_eff_weak, gluon_eff_weak))
+    print('AUCS : ', aucs)
+    np.save("aucs/" + save_name + "_aucs.pdf", aucs)
 
 
 
