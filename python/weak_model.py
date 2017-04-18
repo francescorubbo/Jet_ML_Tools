@@ -89,9 +89,9 @@ def make_bunches(X, Y, bunch_fracs, weak = True, b_size_input = float('inf')):
 #       - need to specify the different bunch fractions to use
 #       - outputs a trained model
 #
-def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3, learning_rate = 0.002, weak = True):
+def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3, learning_rate = 0.002):
  	
-    all_X_bunches, all_Y_bunches = make_bunches(data, labels, bunch_fracs, weak = weak)
+    all_X_bunches, all_Y_bunches = make_bunches(data, labels, bunch_fracs)
     all_X_bunches, all_Y_bunches = np.array(all_X_bunches), np.array(all_Y_bunches)
 
     num_bunches = len(all_X_bunches)
@@ -102,7 +102,7 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
     X_bunches = np.vstack(all_X_bunches[train_indices])
     Y_bunches = np.vstack(all_Y_bunches[train_indices])
 
-    CNN_model = conv_net_construct(hps, compiled = False)
+    CNN_model = weak_conv_net_construct(hps, compiled = False)
     earlystopper = EarlyStopping(monitor="val_loss", patience= hps['patience'])
     save_file_name = "model_weak" 
     checkpointer = ModelCheckpoint(save_file_name, monitor="val_loss", save_best_only=True)
@@ -122,3 +122,52 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
     return CNN_model
     
 
+def weak_conv_net_construct(hps, compiled = True):
+
+    nb_conv = hps['nb_conv']
+    nb_pool = hps['nb_pool']
+    img_size = hps['img_size']
+    nb_filters = hps['nb_filters']
+    nb_channels = hps['nb_channels']
+    nb_neurons = hps['nb_neurons']
+    dropout = hps['dropout']
+    act = hps.setdefault('act', 'relu')
+    out_dim = hps.setdefault('out_dim', 2)
+    init = hps['init']
+
+    model = Sequential()
+    model.add(Convolution2D(nb_filters[0], nb_conv[0], nb_conv[0],
+                            input_shape = (nb_channels, img_size, img_size),
+                            init = init, border_mode = 'valid'))
+    model.add(Activation(act))
+    model.add(MaxPooling2D(pool_size = (nb_pool[0], nb_pool[0])))
+    model.add(SpatialDropout2D(dropout[0]))
+
+    model.add(Convolution2D(nb_filters[1], nb_conv[1], nb_conv[1],
+                            init=init, border_mode = 'valid'))
+    model.add(Activation(act))
+    model.add(MaxPooling2D(pool_size=(nb_pool[1], nb_pool[1])))
+    model.add(SpatialDropout2D(dropout[1]))
+
+    model.add(Convolution2D(nb_filters[2], nb_conv[2], nb_conv[2],
+                            init=init, border_mode = 'valid'))
+    model.add(Activation(act))
+    model.add(MaxPooling2D(pool_size=(nb_pool[2], nb_pool[2])))
+    model.add(SpatialDropout2D(dropout[2]))
+
+    model.add(Flatten())
+
+    model.add(Dense(nb_neurons))
+    model.add(Activation(act))
+    model.add(Dropout(dropout[3]))
+
+    model.add(Dense(out_dim))
+    model.add(Activation('softmax'))
+
+    if compiled:
+        model.compile(loss = 'categorical_crossentropy', optimizer = 'adam',
+                      metrics = ['accuracy'])
+        model.summary()
+        return model
+    else:
+        return model
