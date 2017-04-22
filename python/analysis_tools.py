@@ -37,12 +37,18 @@ def ROC_from_model(model, X_test, Y_test, num_points = 1000):
 def plot_distribution(model, X_test, Y_test, save_name, num_points = 1000):
     quark_prob = model.predict_proba(X_test, verbose = 0)[:,1]
     labels = Y_test[:,1]
-    plt.hist(quark_prob[labels == 1],  histtype='step', normed=True, label="Signal")
-    plt.hist(quark_prob[labels == 0],  histtype='step', normed=True, label="Background")
+    gluon_eff, quark_eff = abstract_ROC(quark_prob, labels, num_points)
+    area  = ROC_area(gluon_eff, quark_eff)
+    plt.title('Distribution : ' + str(area))
+    weights = np.ones_like(quark_prob[labels == 1])/float(len(quark_prob[labels == 1]))
+    plt.hist(quark_prob[labels == 1],  histtype='step', weights=weights,  normed=True, label="Signal")
+    weights = np.ones_like(quark_prob[labels == 0])/float(len(quark_prob[labels == 0]))
+    plt.hist(quark_prob[labels == 0],  histtype='step', weights=weights, normed=True, label="Background")
     plt.xlabel("Probability")
     plt.ylabel("Proportion")
     plt.legend(loc='upper left')
-    plt.savefigt("../plots/weak_dist/" + save_name + "_dist.pdf")
+    plt.savefig("../plots/weak_dist/" + save_name + "_dist.pdf")
+    plt.close()
 
 def abstract_ROC(classifier, labels, num_points = 1000):
 
