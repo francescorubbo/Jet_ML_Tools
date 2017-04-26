@@ -12,7 +12,7 @@ import matplotlib
 #if matplotlib.get_backend() != 'agg':
 matplotlib.use('pdf')
 import matplotlib.pyplot as plt
-
+from sklearn.metrics import roc_curve
 
 def ROC_from_model(model, X_test, Y_test, num_points = 1000):
 
@@ -26,12 +26,11 @@ def ROC_from_model(model, X_test, Y_test, num_points = 1000):
     """
 
     # get model output as probability of being a quark
-    quark_prob = model.predict_proba(X_test, verbose = 0)[:,1]
+    quark_prob = model.predict_proba(X_test, verbose = 0)#[:,1]
     labels = Y_test[:,1]
-
-    # call abstract_ROC
-    gluon_eff, quark_eff = abstract_ROC(quark_prob, labels, num_points)
-
+    quark_prob = quark_prob.flatten()
+    print(quark_prob.shape)
+    gluon_eff, quark_eff  = abstract_ROC(quark_prob, labels, num_points)
     return quark_eff, gluon_eff
 
 def plot_distribution(model, X_test, Y_test, save_name, num_points = 1000):

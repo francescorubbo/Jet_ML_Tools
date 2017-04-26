@@ -18,12 +18,12 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("--n", action="store_true", dest="normalize", default=True)
-    parser.add_option("--ne", type="int", dest="nb_epoch", default=20)
+    parser.add_option("--ne", type="int", dest="nb_epoch", default=50)
     parser.add_option("--init", type="string", dest="init", default="var_scaling")
     parser.add_option("--num_frac", type="int", dest="num_frac", default=50)
-    parser.add_option("--num_iter", type="int", dest="num_iter", default=40)
-    parser.add_option("--learning_rate", type="float", dest="lr", default=1e-3)
-    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50frac_varscale05_full_supervision")
+    parser.add_option("--num_iter", type="int", dest="num_iter", default=10)
+    parser.add_option("--learning_rate", type="float", dest="lr", default=1e-4)
+    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50var_scaling05_weak_sigmoid")
     options, args = parser.parse_args()
     normalize = options.normalize
     nb_epoch  = options.nb_epoch
@@ -51,30 +51,29 @@ if __name__ == '__main__':
                 'batch_size': 128, 
                 'img_size': 33,
                 'nb_epoch': nb_epoch, 
-                'nb_conv': [8,4,4], 
+                'nb_conv': [8, 4, 4], 
                 'nb_filters': [64, 64, 64],
                 'nb_neurons': 128, 
                 'nb_pool': [2, 2, 2], 
                 'dropout': [.25, .5, .5, .5],
                 'nb_channels': 1, 
                 'init' : init,
-                'patience': 4, 
-                'out_dim' : 2
+                'patience': 10, 
+                'out_dim' : 1
             }
 
     # some example bunch fractions
     bunch_fracs = np.linspace(0.1, 1.0, num_frac) 
     aucs = []
     for i in range(num_iter):
-        CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.3, learning_rate=lr, save_fname=save_name, weak=False)
-        print("Test Metrics : ", CNN_model.evaluate(data_test, labels_test))
+        CNN_model = weak_train_CNN(data_train, labels_train, hps, bunch_fracs = bunch_fracs, val_frac = 0.3, learning_rate=lr, save_fname=save_name, weak=True)
         quark_eff_weak, gluon_eff_weak = ROC_from_model(CNN_model, data_test, labels_test)
         area = ROC_area(quark_eff_weak, gluon_eff_weak)
         aucs.append(area)
         print("iter : ", i, " - Area : ", area)
-        if area > 0.8:
-            curr_save_name = save_name + str(i)
-            plot_distribution(CNN_model, data_test, labels_test, curr_save_name)
+        #if area > 0.8:
+        #    curr_save_name = save_name + str(i)
+        #    plot_distribution(CNN_model, data_test, labels_test, curr_save_name)
     print('AUCS : ', aucs)
     np.save("aucs/" + save_name + "_aucs", aucs)
     median = np.median(aucs)

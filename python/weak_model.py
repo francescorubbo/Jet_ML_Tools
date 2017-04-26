@@ -14,7 +14,7 @@ import random
 import os 
 from keras.regularizers import l1
 from keras.initializers import VarianceScaling
-
+from keras.optimizers import Adamax, Nadam
 #CONSTANTS
 curr_batch_size = 6456
 
@@ -24,7 +24,7 @@ curr_batch_size = 6456
 #       - assumes that ytrue and ypred are 1-hot encoded
 #
 def weak_loss_function(ytrue, ypred):
-    return K.square((K.sum(ypred[:,1]) - K.sum(ytrue[:,1]))/curr_batch_size)
+    return K.square((K.sum(ypred) - K.sum(ytrue[:,1]))/curr_batch_size)
 
 #
 #   Batch generation for training with Keras
@@ -114,14 +114,14 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
         os.remove(save_fname)
 
     if weak:
-        CNN_model.compile(loss=weak_loss_function, optimizer=Adam(lr=learning_rate), metrics = ['accuracy']) 
+        CNN_model.compile(loss=weak_loss_function, optimizer=Nadam(lr=learning_rate), metrics = ['accuracy']) 
     else:
         CNN_model.compile(loss="categorical_crossentropy", optimizer=Adam(lr=learning_rate), metrics = ['accuracy'])
 
     CNN_model.summary()
     print('\nDuring proper training, \'acc\' should tend towards {:.3f}\n'
                                     .format(.5+np.mean([abs(.5-x) for x in bunch_fracs])))
-    
+    print('Batch size being used : ', curr_batch_size)
     if weak: 
         history = CNN_model.fit(X_bunches, Y_bunches, batch_size=curr_batch_size,  shuffle='batch', nb_epoch=hps["nb_epoch"],\
             validation_data=(X_val, Y_val), callbacks=[earlystopper, checkpointer])
@@ -143,8 +143,8 @@ def weak_conv_net_construct(hps, compiled = True):
     nb_channels = hps['nb_channels']
     nb_neurons = hps['nb_neurons']
     dropout = hps['dropout']
-    act = hps.setdefault('act', 'relu')
-    out_dim = hps.setdefault('out_dim', 2)
+    act = hps.setdefault('act', 'elu')
+    out_dim = hps.setdefault('out_dim', 1)
     init = hps['init']
     if init == "var_scaling":
         init = VarianceScaling(scale=0.5)
@@ -176,7 +176,7 @@ def weak_conv_net_construct(hps, compiled = True):
     model.add(Dropout(dropout[3]))
 
     model.add(Dense(out_dim))
-    model.add(Activation('softmax'))
+    model.add(Activation('sigmoid')) #'softmax'))
 
     if compiled:
         model.compile(loss = 'categorical_crossentropy', optimizer = 'adam',
