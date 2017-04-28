@@ -26,7 +26,7 @@ def ROC_from_model(model, X_test, Y_test, num_points = 1000):
     """
 
     # get model output as probability of being a quark
-    quark_prob = model.predict_proba(X_test, verbose = 0)#[:,1]
+    quark_prob = model.predict_proba(X_test, verbose = 0)[:,1]
     labels = Y_test[:,1]
     quark_prob = quark_prob.flatten()
     print(quark_prob.shape)

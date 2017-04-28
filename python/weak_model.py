@@ -26,6 +26,8 @@ curr_batch_size = 6456
 def weak_loss_function(ytrue, ypred):
     return K.square((K.sum(ypred) - K.sum(ytrue[:,1]))/curr_batch_size)
 
+def weak_loss_function_softmax(ytrue, ypred):
+    return K.sum(K.square(K.sum(ytrue - ypred, axis=0)/curr_batch_size))/2
 #
 #   Batch generation for training with Keras
 #       - samples are assumed to be an array of N (equally sized) bunches of images
@@ -114,7 +116,7 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
         os.remove(save_fname)
 
     if weak:
-        CNN_model.compile(loss=weak_loss_function, optimizer=Nadam(lr=learning_rate), metrics = ['accuracy']) 
+        CNN_model.compile(loss=weak_loss_function_softmax, optimizer=Nadam(lr=learning_rate), metrics = ['accuracy']) 
     else:
         CNN_model.compile(loss="categorical_crossentropy", optimizer=Adam(lr=learning_rate), metrics = ['accuracy'])
 
@@ -133,6 +135,15 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
     #print("Val Loss : ", CNN_model.evaluate(X_val, Y_val, batch_size=curr_batch_size))
     return CNN_model
     
+from keras.layers.advanced_activations import  PReLU, ELU
+
+def getActivation(activation):
+    if(activation == 'elu'):
+        return ELU(alpha=1.0)
+    elif(activation == 'prelu'):
+        return PReLU()
+    return activation
+
 
 def weak_conv_net_construct(hps, compiled = True):
 
@@ -143,8 +154,8 @@ def weak_conv_net_construct(hps, compiled = True):
     nb_channels = hps['nb_channels']
     nb_neurons = hps['nb_neurons']
     dropout = hps['dropout']
-    act = hps.setdefault('act', 'elu')
-    out_dim = hps.setdefault('out_dim', 1)
+    act = getActivation(hps['act'])
+    out_dim = hps['out_dim'] 
     init = hps['init']
     if init == "var_scaling":
         init = VarianceScaling(scale=0.5)
@@ -153,30 +164,47 @@ def weak_conv_net_construct(hps, compiled = True):
     model.add(Convolution2D(nb_filters[0], nb_conv[0], nb_conv[0],
                             input_shape = (nb_channels, img_size, img_size),
                             init = init, border_mode = 'valid', W_regularizer=l1(reg)))
-    model.add(Activation(act))
+    
+    if hps['act'] == 'elu' or hps['act'] == 'prelu':
+        model.add(getActivation(hps['act']))
+    else:
+        model.add(Activation(act))
+    
     model.add(MaxPooling2D(pool_size = (nb_pool[0], nb_pool[0])))
     model.add(SpatialDropout2D(dropout[0]))
 
     model.add(Convolution2D(nb_filters[1], nb_conv[1], nb_conv[1],
                             init=init, border_mode = 'valid', W_regularizer=l1(reg)))
-    model.add(Activation(act))
+    
+    if hps['act'] == 'elu' or hps['act'] == 'prelu':
+        model.add(getActivation(hps['act']))
+    else:
+        model.add(Activation(act))
+    
     model.add(MaxPooling2D(pool_size=(nb_pool[1], nb_pool[1])))
     model.add(SpatialDropout2D(dropout[1]))
 
     model.add(Convolution2D(nb_filters[2], nb_conv[2], nb_conv[2],
                             init=init, border_mode = 'valid', W_regularizer=l1(reg)))
-    model.add(Activation(act))
+    
+    if hps['act'] == 'elu' or hps['act'] == 'prelu':
+        model.add(getActivation(hps['act']))
+    else:
+        model.add(Activation(act))
     model.add(MaxPooling2D(pool_size=(nb_pool[2], nb_pool[2])))
     model.add(SpatialDropout2D(dropout[2]))
 
     model.add(Flatten())
 
     model.add(Dense(nb_neurons))
-    model.add(Activation(act))
+    if hps['act'] == 'elu' or hps['act'] == 'prelu':
+        model.add(getActivation(hps['act'])) 
+    else:
+        model.add(Activation(act))
     model.add(Dropout(dropout[3]))
 
     model.add(Dense(out_dim))
-    model.add(Activation('sigmoid')) #'softmax'))
+    model.add(Activation('softmax'))
 
     if compiled:
         model.compile(loss = 'categorical_crossentropy', optimizer = 'adam',

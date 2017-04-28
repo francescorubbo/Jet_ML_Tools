@@ -21,9 +21,10 @@ if __name__ == '__main__':
     parser.add_option("--ne", type="int", dest="nb_epoch", default=50)
     parser.add_option("--init", type="string", dest="init", default="var_scaling")
     parser.add_option("--num_frac", type="int", dest="num_frac", default=50)
-    parser.add_option("--num_iter", type="int", dest="num_iter", default=10)
-    parser.add_option("--learning_rate", type="float", dest="lr", default=1e-4)
-    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50var_scaling05_weak_sigmoid")
+    parser.add_option("--act", type="string", dest="act", default='elu')
+    parser.add_option("--num_iter", type="int", dest="num_iter", default=8)
+    parser.add_option("--learning_rate", type="float", dest="lr", default=4e-4)
+    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50var_scaling05_weak_fixedsoftmax_elu_nodp4")
     options, args = parser.parse_args()
     normalize = options.normalize
     nb_epoch  = options.nb_epoch
@@ -32,6 +33,7 @@ if __name__ == '__main__':
     num_iter = options.num_iter
     save_name = options.save_name
     lr = options.lr
+    act = options.act
 
     print(options)
     # specify the file inputs
@@ -55,11 +57,12 @@ if __name__ == '__main__':
                 'nb_filters': [64, 64, 64],
                 'nb_neurons': 128, 
                 'nb_pool': [2, 2, 2], 
-                'dropout': [.25, .5, .5, .5],
+                'dropout': [0, 0, 0, 0, 0], #.25, .5, .5, .5],
                 'nb_channels': 1, 
                 'init' : init,
-                'patience': 10, 
-                'out_dim' : 1
+                'patience': 5, 
+                'out_dim' : 2,
+                'act' : act
             }
 
     # some example bunch fractions
