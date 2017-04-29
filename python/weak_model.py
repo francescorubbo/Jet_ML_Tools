@@ -17,7 +17,7 @@ from keras.initializers import VarianceScaling
 from keras.optimizers import Adamax, Nadam
 #CONSTANTS
 curr_batch_size = 6456
-
+EPSILON = 1e-7
 #
 #   Loss Function for Weak Supervision
 #       - squared-loss for category-level model predictions
@@ -25,6 +25,12 @@ curr_batch_size = 6456
 #
 def weak_loss_function(ytrue, ypred):
     return K.square((K.sum(ypred) - K.sum(ytrue[:,1]))/curr_batch_size)
+
+def weak_loss_crossentropy(ytrue, ypred):
+    p_hat = K.sum(ypred, axis=0) / curr_batch_size
+    y_hat = K.sum(ytrue, axis=0) / curr_batch_size
+    loss = K.sum(-y_hat*K.log(p_hat/(y_hat + EPSILON)))
+    return loss
 
 def weak_loss_function_softmax(ytrue, ypred):
     return K.sum(K.square(K.sum(ytrue - ypred, axis=0)/curr_batch_size))/2
@@ -116,7 +122,7 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
         os.remove(save_fname)
 
     if weak:
-        CNN_model.compile(loss=weak_loss_function_softmax, optimizer=Nadam(lr=learning_rate), metrics = ['accuracy']) 
+        CNN_model.compile(loss= weak_loss_crossentropy, optimizer=Nadam(lr=learning_rate), metrics = ['accuracy']) 
     else:
         CNN_model.compile(loss="categorical_crossentropy", optimizer=Adam(lr=learning_rate), metrics = ['accuracy'])
 

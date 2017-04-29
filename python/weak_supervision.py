@@ -22,9 +22,10 @@ if __name__ == '__main__':
     parser.add_option("--init", type="string", dest="init", default="var_scaling")
     parser.add_option("--num_frac", type="int", dest="num_frac", default=50)
     parser.add_option("--act", type="string", dest="act", default='elu')
-    parser.add_option("--num_iter", type="int", dest="num_iter", default=8)
-    parser.add_option("--learning_rate", type="float", dest="lr", default=4e-4)
-    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50var_scaling05_weak_fixedsoftmax_elu_nodp4")
+    parser.add_option("--num_iter", type="int", dest="num_iter", default=10)
+    parser.add_option("--data_frac", type="float", dest="data_frac", default=1.0)
+    parser.add_option("--learning_rate", type="float", dest="lr", default=5e-4)
+    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50var_scaling05_weak_crossent_elu_nodp10-1")
     options, args = parser.parse_args()
     normalize = options.normalize
     nb_epoch  = options.nb_epoch
@@ -34,6 +35,7 @@ if __name__ == '__main__':
     save_name = options.save_name
     lr = options.lr
     act = options.act
+    data_frac = options.data_frac
 
     print(options)
     # specify the file inputs
@@ -44,6 +46,14 @@ if __name__ == '__main__':
     labels = to_categorical(np.concatenate((np.zeros(n_events_per_file*n_files),np.ones(n_events_per_file*n_files))), 2)
     data_train, labels_train, data_test, labels_test = data_split(data, labels, val_frac = 0.0, test_frac = 0.1)
 	
+    num_train = len(data_train)
+    print("Original Data Length : ", num_train, " Test length : ", len(data_test) )
+    num_use  = int(data_frac*num_train)
+    indices = np.random.permutation(len(data_train))[:num_use]
+    data_train = data_train[indices]
+    labels_train = labels_train[indices]
+    print("New Data length :", len(data_train))
+    
     if normalize:
         data_train, data_test  = zero_center(data_train, data_test)
         data_train, data_test  = standardize(data_train, data_test)
