@@ -122,6 +122,7 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
         os.remove(save_fname)
 
     if weak:
+        # TODO : Experiment with momentum to try to excape local minima/saddle pts
         CNN_model.compile(loss= weak_loss_crossentropy, optimizer=Nadam(lr=learning_rate), metrics = ['accuracy']) 
     else:
         CNN_model.compile(loss="categorical_crossentropy", optimizer=Adam(lr=learning_rate), metrics = ['accuracy'])
@@ -142,6 +143,7 @@ def weak_train_CNN(data, labels, hps, bunch_fracs = [0.25, 0.75], val_frac = 0.3
     return CNN_model
     
 from keras.layers.advanced_activations import  PReLU, ELU
+from keras.layers.normalization import BatchNormalization
 
 def getActivation(activation):
     if(activation == 'elu'):
@@ -164,13 +166,13 @@ def weak_conv_net_construct(hps, compiled = True):
     out_dim = hps['out_dim'] 
     init = hps['init']
     if init == "var_scaling":
-        init = VarianceScaling(scale=0.5)
+        init = VarianceScaling(scale=1.0)
     reg = 0.0000
     model = Sequential()
     model.add(Convolution2D(nb_filters[0], nb_conv[0], nb_conv[0],
                             input_shape = (nb_channels, img_size, img_size),
                             init = init, border_mode = 'valid', W_regularizer=l1(reg)))
-    
+    #model.add(BatchNormalization())
     if hps['act'] == 'elu' or hps['act'] == 'prelu':
         model.add(getActivation(hps['act']))
     else:
@@ -182,6 +184,7 @@ def weak_conv_net_construct(hps, compiled = True):
     model.add(Convolution2D(nb_filters[1], nb_conv[1], nb_conv[1],
                             init=init, border_mode = 'valid', W_regularizer=l1(reg)))
     
+    #model.add(BatchNormalization())
     if hps['act'] == 'elu' or hps['act'] == 'prelu':
         model.add(getActivation(hps['act']))
     else:
@@ -192,7 +195,8 @@ def weak_conv_net_construct(hps, compiled = True):
 
     model.add(Convolution2D(nb_filters[2], nb_conv[2], nb_conv[2],
                             init=init, border_mode = 'valid', W_regularizer=l1(reg)))
-    
+        
+    #model.add(BatchNormalization())
     if hps['act'] == 'elu' or hps['act'] == 'prelu':
         model.add(getActivation(hps['act']))
     else:
