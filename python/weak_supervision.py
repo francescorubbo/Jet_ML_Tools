@@ -18,14 +18,14 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("--n", action="store_true", dest="normalize", default=True)
-    parser.add_option("--ne", type="int", dest="nb_epoch", default=100)
+    parser.add_option("--ne", type="int", dest="nb_epoch", default=80)
     parser.add_option("--init", type="string", dest="init", default="var_scaling")
     parser.add_option("--num_frac", type="int", dest="num_frac", default=50)
     parser.add_option("--act", type="string", dest="act", default='elu')
-    parser.add_option("--num_iter", type="int", dest="num_iter", default=10)
+    parser.add_option("--num_iter", type="int", dest="num_iter", default=50)
     parser.add_option("--data_frac", type="float", dest="data_frac", default=1.0)
     parser.add_option("--learning_rate", type="float", dest="lr", default=2e-4)
-    parser.add_option("--save_name", type="string", dest="save_name", default="3_normed_50var_scaling4_weak_crossent_elu_nodp10-2")
+    parser.add_option("--save_name", type="string", dest="save_name", default="test")
     options, args = parser.parse_args()
     normalize = options.normalize
     nb_epoch  = options.nb_epoch
